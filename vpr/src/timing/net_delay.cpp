@@ -1,6 +1,8 @@
 #include <cstdio>
 using namespace std;
 
+#include <queue> // for testing the print function purposes
+
 #include "vtr_memory.h"
 #include "vtr_log.h"
 
@@ -94,6 +96,7 @@ static void free_rc_node_free_list(t_rc_node * rc_node_free_list);
 
 static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 
+static void print_rc_tree(t_rc_node * rc_root);
 /*************************** Subroutine definitions **************************/
 
 /* Allocates space for the net_delay data structure   *
@@ -157,6 +160,7 @@ void load_net_delay_from_routing(vtr::vector<ClusterNetId, float *> &net_delay) 
 					&rc_edge_free_list, rr_node_to_rc_node);
 			load_rc_tree_C(rc_root);
 			load_rc_tree_T(rc_root, 0.);
+            print_rc_tree(rc_root);
 			load_one_net_delay(net_delay, net_id, rr_node_to_rc_node);
 			free_rc_tree(rc_root, &rc_node_free_list, &rc_edge_free_list);
 			reset_rr_node_to_rc_node(rr_node_to_rc_node, net_id);
@@ -337,6 +341,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
+	C = device_ctx.rr_nodes[inode].C();
 	C = device_ctx.rr_nodes[inode].C();
 
 	while (linked_rc_edge != nullptr) { /* For all children */
@@ -538,3 +543,49 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 		rc_edge = next_edge;
 	}
 }
+// Source for Level Order Traversal on a General Tree: https://www.geeksforgeeks.org/generic-tree-level-order-traversal/
+
+static void print_rc_tree(t_rc_node * rc_root)
+{
+
+    VTR_LOG("BEGINING: ");
+    //initialize temporary nodes
+    
+    t_rc_node *p; // this pointer will be used to process the front of the queue
+
+    t_linked_rc_edge *c; // this pointer will be used to process  
+    
+    
+    if (rc_root == nullptr) // root is null, then we return
+    {
+        return;
+    }
+
+    queue<t_rc_node *> q; //create a queue of t_rc_node
+    q.push(rc_root); //push the root into the queue
+    while (!q.empty()) 
+    {
+        int num_processed = q.size(); //keep track of the number of processed children
+        while (num_processed > 0) //ensures we print children on the same level
+        {
+            //dequeue the first element
+            p = q.front();
+            c = p -> u.child_list;
+            q.pop();
+
+            auto& device_ctx = g_vpr_ctx.device();
+            
+            VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+
+            while (c != nullptr)
+            {
+                q.push(c->child);
+                c = c -> next;
+            }
+            num_processed--;
+        }
+        VTR_LOG("\n");
+    }
+    VTR_LOG(" END\n");
+}
+
