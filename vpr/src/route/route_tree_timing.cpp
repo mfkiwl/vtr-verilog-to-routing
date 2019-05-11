@@ -239,7 +239,7 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
 	if (subtree_parent_rt_node != nullptr) { /* Parent exists. */
 		Tdel_start = subtree_parent_rt_node->Tdel;
 		iswitch = unbuffered_subtree_rt_root->parent_switch;
-		Tdel_start += device_ctx.rr_switch_inf[iswitch].R * (unbuffered_subtree_rt_root->C_downstream + device_ctx.rr_switch_inf[iswitch].Cinternal);
+		Tdel_start += device_ctx.rr_switch_inf[iswitch].R * unbuffered_subtree_rt_root->C_downstream;
 		Tdel_start += device_ctx.rr_switch_inf[iswitch].Tdel;
 	} else { /* Subtree starts at SOURCE */
 		Tdel_start = 0.;
@@ -475,9 +475,7 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
         C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
         for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
-            //All the connections made here are enabled switches which are responsible for creating
-            //the internal capacitance. So we will simplay add it here.
-            //C_downstream += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
+
             float C_downstream_child = load_new_subtree_C_downstream(edge->child);
 
             if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
@@ -509,10 +507,8 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	C_downstream_addition = rt_node->C_downstream;
 	parent_rt_node = rt_node->parent_node;
 	iswitch = rt_node->parent_switch;
-    
-    //parent_rt_node -> C_downstream += device_ctx.rr_switch_inf[iswitch].Cinternal;
-	
-    while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
+
+	while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
 		rt_node = parent_rt_node;
 		rt_node->C_downstream += C_downstream_addition;
 		parent_rt_node = rt_node->parent_node;
