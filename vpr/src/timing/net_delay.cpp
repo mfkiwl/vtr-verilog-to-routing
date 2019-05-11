@@ -342,7 +342,6 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
 	C = device_ctx.rr_nodes[inode].C();
-	C = device_ctx.rr_nodes[inode].C();
 
 	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
