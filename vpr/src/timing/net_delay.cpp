@@ -160,7 +160,7 @@ void load_net_delay_from_routing(vtr::vector<ClusterNetId, float *> &net_delay) 
 					&rc_edge_free_list, rr_node_to_rc_node);
 			load_rc_tree_C(rc_root);
 			load_rc_tree_T(rc_root, 0.);
-            print_rc_tree(rc_root);
+            //print_rc_tree(rc_root);
 			load_one_net_delay(net_delay, net_id, rr_node_to_rc_node);
 			free_rc_tree(rc_root, &rc_node_free_list, &rc_edge_free_list);
 			reset_rr_node_to_rc_node(rr_node_to_rc_node, net_id);
@@ -342,11 +342,13 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
 	C = device_ctx.rr_nodes[inode].C();
-	C = device_ctx.rr_nodes[inode].C();
 
 	while (linked_rc_edge != nullptr) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
+        //Every switch added in this loop is an enabled switch, which is responsible for causing the
+        //additional internal capacitance.
+        //C += device_ctx.rr_switch_inf[iswitch].Cinternal; 
 		C_downstream = load_rc_tree_C(child_node);
 
 		if (!device_ctx.rr_switch_inf[iswitch].buffered())
