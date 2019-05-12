@@ -551,7 +551,7 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 static void print_rc_tree(t_rc_node * rc_root)
 {
 
-    VTR_LOG("BEGINING: ");
+    VTR_LOG("BEGININGRC: ");
     //initialize temporary nodes
     
     t_rc_node *p; // this pointer will be used to process the front of the queue
@@ -589,6 +589,6 @@ static void print_rc_tree(t_rc_node * rc_root)
         }
         VTR_LOG("\n");
     }
-    VTR_LOG(" END\n");
+    VTR_LOG(" ENDRC\n");
 }
 

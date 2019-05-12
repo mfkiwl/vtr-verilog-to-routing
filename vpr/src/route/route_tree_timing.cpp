@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
+#include <queue>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -41,6 +42,8 @@ static t_rt_node *rt_node_free_list = nullptr;
 static t_linked_rt_edge *rt_edge_free_list = nullptr;
 
 /********************** Subroutines local to this module *********************/
+
+static void print_rt_tree(t_rt_node * rt_root);
 
 static t_rt_node *alloc_rt_node();
 
@@ -247,6 +250,17 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
 
 	load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
 
+    auto source_rt_node = unbuffered_subtree_rt_root;
+    auto parent_source = subtree_parent_rt_node;
+
+    while (parent_source != nullptr)
+    {
+        source_rt_node = parent_source;
+        parent_source = source_rt_node -> parent_node;
+    }
+
+    print_rt_tree(source_rt_node);
+    
     if (spatial_rt_lookup) {
         update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
@@ -254,6 +268,44 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
 	return (sink_rt_node);
 }
 
+ static void print_rt_tree(t_rt_node * rt_root)
+ {
+
+     if (rt_root == nullptr) // root is null, then we return
+     {
+         return;
+     }
+     VTR_LOG("BEGININGRT: ");
+
+     t_rt_node *p; // this pointer will be used to process the front of the queue
+     t_linked_rt_edge *c; // this pointer will be used to process
+     queue<t_rt_node *> q; //create a queue of t_rt_node
+     q.push(rt_root); //push the root into the queue
+     while (!q.empty())
+     {
+         int num_processed = q.size(); //keep track of the number of processed children
+         while (num_processed > 0) //ensures we print children on the same level
+         {
+             //dequeue the first element
+             p = q.front();
+             c = p -> u.child_list;
+             q.pop();
+
+             auto& device_ctx = g_vpr_ctx.device();
+
+             VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+
+             while (c != nullptr)
+             {
+                 q.push(c->child);
+                 c = c -> next;
+             }
+             num_processed--;
+         }
+         VTR_LOG("\n");
+     }
+     VTR_LOG(" ENDRT\n");
+ }
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
         VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
@@ -1067,7 +1119,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
 
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
-
+    
 	/* Update pathfinder cost of all nodes rooted at rt_root, including rt_root itself */
 
 	VTR_ASSERT(rt_root != nullptr);
@@ -1097,7 +1149,46 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 	}
 }
 
-
+//void print_rt_tree(const t_rt_node* rt_root)
+// {
+//
+//
+//     if (rt_root == nullptr) // root is null, then we return
+//     {
+//         return;
+//     }
+//     
+//     const t_rt_node *p; // this pointer will be used to process the front of the queue
+//     t_linked_rt_edge *c; // this pointer will be used to process
+//     queue<const t_rt_node *> q; //create a queue of t_rt_node
+//     q.push(rt_root); //push the root into the queue
+//
+//     VTR_LOG("BEGININGRT: ");
+//     while (!q.empty())
+//     {
+//         int num_processed = q.size(); //keep track of the number of processed children
+//         while (num_processed > 0) //ensures we print children on the same level
+//         {
+//             //dequeue the first element
+//             p = q.front();
+//             c = p -> u.child_list;
+//             q.pop();
+//
+//             auto& device_ctx = g_vpr_ctx.device();
+//
+//             VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+//
+//             while (c != nullptr)
+//             {
+//                 q.push(c->child);
+//                 c = c -> next;
+//             }
+//             num_processed--;
+//         }
+//         VTR_LOG("\n");
+//     }
+//     VTR_LOG(" ENDRT\n");
+// }
 
 /***************** Debugging and printing for incremental rerouting ****************/
 template <typename Op>

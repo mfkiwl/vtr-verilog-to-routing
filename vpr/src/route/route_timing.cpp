@@ -2,8 +2,10 @@
 #include <ctime>
 #include <cmath>
 #include <vector>
+#include <queue> //just for testing
 #include <unordered_map>
 #include <algorithm>
+
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -292,6 +294,7 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const SetupTimingInfo& timing_info,
                                           const RoutingDelayCalculator& delay_calc);
 
+//static void print_rt_tree(t_rt_node * rt_root);
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(
         const t_router_opts& router_opts,
@@ -1517,11 +1520,16 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigne
 
         // still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
         load_route_tree_Tdel(rt_root, 0);
-
+       
         // mark the lookup (rr_node_route_inf) for existing tree elements as NO_PREVIOUS so add_to_path stops when it reaches one of them
         load_route_tree_rr_route_inf(rt_root);
+    
+        //print the tree
+        //print_rt_tree(rt_root);
+        
     }
 
+    
     // completed constructing the partial route tree and updated all other data structures to match
     return rt_root;
 }
@@ -2754,3 +2762,48 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
+
+//static void print_rt_tree(t_rt_node * rt_root)
+//{
+//
+//    VTR_LOG("BEGININGRT: ");
+//    //initialize temporary nodes
+//    
+//    t_rt_node *p; // this pointer will be used to process the front of the queue
+//
+//    t_linked_rt_edge *c; // this pointer will be used to process  
+//    
+//    
+//    if (rt_root == nullptr) // root is null, then we return
+//    {
+//        return;
+//    }
+//
+//    queue<t_rt_node *> q; //create a queue of t_rt_node
+//    q.push(rt_root); //push the root into the queue
+//    while (!q.empty()) 
+//    {
+//        int num_processed = q.size(); //keep track of the number of processed children
+//        while (num_processed > 0) //ensures we print children on the same level
+//        {
+//            //dequeue the first element
+//            p = q.front();
+//            c = p -> u.child_list;
+//            q.pop();
+//
+//            auto& device_ctx = g_vpr_ctx.device();
+//            
+//            VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+//
+//            while (c != nullptr)
+//            {
+//                q.push(c->child);
+//                c = c -> next;
+//            }
+//            num_processed--;
+//        }
+//        VTR_LOG("\n");
+//    }
+//    VTR_LOG(" ENDRT\n");
+//}
+
