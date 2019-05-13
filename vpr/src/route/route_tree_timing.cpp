@@ -249,10 +249,14 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
 	}
 
 	load_route_tree_Tdel(unbuffered_subtree_rt_root, Tdel_start);
-
+    
+    if (spatial_rt_lookup) {
+        update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
+    }
+    
     auto source_rt_node = unbuffered_subtree_rt_root;
     auto parent_source = subtree_parent_rt_node;
-
+    
     while (parent_source != nullptr)
     {
         source_rt_node = parent_source;
@@ -260,10 +264,6 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
     }
 
     print_rt_tree(source_rt_node);
-    
-    if (spatial_rt_lookup) {
-        update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
-    }
 
 	return (sink_rt_node);
 }
