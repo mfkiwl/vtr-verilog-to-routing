@@ -254,17 +254,6 @@ t_rt_node* update_route_tree(t_heap * hptr, SpatialRouteTreeLookup* spatial_rt_l
         update_route_tree_spatial_lookup_recur(start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
     
-    auto source_rt_node = unbuffered_subtree_rt_root;
-    auto parent_source = subtree_parent_rt_node;
-    
-    while (parent_source != nullptr)
-    {
-        source_rt_node = parent_source;
-        parent_source = source_rt_node -> parent_node;
-    }
-
-    print_rt_tree(source_rt_node);
-
 	return (sink_rt_node);
 }
 
