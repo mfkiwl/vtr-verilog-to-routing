@@ -1,0 +1,14 @@
+ # Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/test
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+
+# Add architectures to list to sweep
+arch_list_add=mux_specified.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt

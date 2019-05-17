@@ -78,12 +78,12 @@ mkdir tri_unspecified_tot
 ./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/ex5p.blif --route_chan_width 300; cp vpr_stdout.log tri_unspecified/tri_4.log;
 
 
-mkdir tri_specified
+mkdir tri_unspecified
 
-./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log tri_specified/tri_1.log;
-./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log tri_specified/tri_2.log;
-./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log tri_specified/tri_3.log;
-./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/ex5p.blif --route_chan_width 300; cp vpr_stdout.log tri_specified/tri_4.log;
+./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log tri_unspecified/tri_1.log;
+./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log tri_unspecified/tri_2.log;
+./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log tri_unspecified/tri_3.log;
+./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/tri_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/ex5p.blif --route_chan_width 300; cp vpr_stdout.log tri_unspecified/tri_4.log;
 
 mkdir tri_unspecified_in
 
@@ -132,20 +132,20 @@ mkdir buffer_specified;
 
 
 mkdir pass_unspecified
-#
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_1.log;
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_2.log;
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_3.log;
+##
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_1.log;
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_2.log;
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_3.log;
 ./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/ex5p.blif --route_chan_width 300; cp vpr_stdout.log pass_unspecified/pass_4.log;
-#
-#
-#mkdir pass_specified
-#
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_1.log;
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_2.log;
-#./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_3.log;
+##
+##
+mkdir pass_specified
+##
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/alu4.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_1.log;
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/diffeq.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_2.log;
+##./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/misex3.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_3.log;
 ./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/pass_specified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/blif/ex5p.blif --route_chan_width 300; cp vpr_stdout.log pass_specified/pass_4.log;
-#
+##
 mkdir short_unspecified;
 
 ./vpr ~/vtr-verilog-to-routing/vtr_flow/arch/test/short_unspecified.xml ~/vtr-verilog-to-routing/vtr_flow/benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif --route_chan_width 300; cp vpr_stdout.log short_unspecified/short_1.log;
