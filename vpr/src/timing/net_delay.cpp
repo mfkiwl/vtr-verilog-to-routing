@@ -577,8 +577,14 @@ static void print_rc_tree(t_rc_node * rc_root)
             q.pop();
 
             auto& device_ctx = g_vpr_ctx.device();
-            
-            VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+             if (c != nullptr)
+             {
+                 VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type());
+             }
+             else
+             {
+                 VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: -1;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
+             }
 
             while (c != nullptr)
             {
