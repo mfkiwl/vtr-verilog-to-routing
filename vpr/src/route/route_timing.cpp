@@ -294,7 +294,6 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const SetupTimingInfo& timing_info,
                                           const RoutingDelayCalculator& delay_calc);
 
-static void print_rt_tree(t_rt_node * rt_root);
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(
         const t_router_opts& router_opts,
@@ -1013,7 +1012,6 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry,
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-    print_rt_tree(rt_root);
     free_route_tree(rt_root);
     return (true);
 }
@@ -1934,15 +1932,18 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
 
     t_timing_driven_node_costs new_costs;
 
-    //Switch info
+    //Info for the switch connecting from_node to_node 
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iconn);
     bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
 
-    //Node info
+    //To node info
     float node_C = device_ctx.rr_nodes[to_node].C();
     float node_R = device_ctx.rr_nodes[to_node].R();
+    
+    //From node info
+    float from_node_R = device_ctx.rr_nodes[from_node].R();
 
     //Update R_upstream
     if (switch_buffered) {
@@ -1956,11 +1957,13 @@ static t_timing_driven_node_costs evaluate_timing_driven_node_costs(const t_timi
     //Calculate delay
     float Rdel = new_costs.R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C; //sum the node capcitance with internal capacitance
-
+    
+    float old_Rdel = old_costs.R_upstream - 0.5 * from_node_R;
+    	
     //Update the backward cost
     new_costs.backward_cost = old_costs.backward_cost; //Back cost to 'from_node'
     new_costs.backward_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
-    new_costs.backward_cost += cost_params.criticality * Tdel; //Delay cost
+    new_costs.backward_cost += cost_params.criticality * (Tdel + old_Rdel * switch_Cinternal); //Delay cost accounting for Cinternal
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2758,54 +2761,3 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
-static void print_rt_tree(t_rt_node * rt_root)
-{
-
-    VTR_LOG("BEGININGRT: ");
-    //initialize temporary nodes
-    
-    t_rt_node *p; // this pointer will be used to process the front of the queue
-
-    t_linked_rt_edge *c; // this pointer will be used to process  
-    
-    
-    if (rt_root == nullptr) // root is null, then we return
-    {
-        return;
-    }
-
-    queue<t_rt_node *> q; //create a queue of t_rt_node
-    q.push(rt_root); //push the root into the queue
-    while (!q.empty()) 
-    {
-        int num_processed = q.size(); //keep track of the number of processed children
-        while (num_processed > 0) //ensures we print children on the same level
-        {
-            //dequeue the first element
-            p = q.front();
-            c = p -> u.child_list;
-            q.pop();
-
-            auto& device_ctx = g_vpr_ctx.device();
-            if (c != nullptr)
-            {
-                VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d, name: %s;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type(), device_ctx.rr_switch_inf[c->iswitch].name);
-            }
-            else
-            {
-                VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: -1;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel);
-            }
-            
-
-            while (c != nullptr)
-            {
-                q.push(c->child);
-                c = c -> next;
-            }
-            num_processed--;
-        }
-        VTR_LOG("\n");
-    }
-    VTR_LOG(" ENDRT\n");
-}
-
