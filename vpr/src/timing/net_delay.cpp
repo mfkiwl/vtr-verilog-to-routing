@@ -546,8 +546,6 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list) {
 		rc_edge = next_edge;
 	}
 }
-// Source for Level Order Traversal on a General Tree: https://www.geeksforgeeks.org/generic-tree-level-order-traversal/
-
 static void print_rc_tree(t_rc_node * rc_root)
 {
 
@@ -579,7 +577,7 @@ static void print_rc_tree(t_rc_node * rc_root)
             auto& device_ctx = g_vpr_ctx.device();
              if (c != nullptr)
              {
-                 VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type());
+                 VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d, name: %s;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type(),device_ctx.rr_switch_inf[c->iswitch].name);
              }
              else
              {

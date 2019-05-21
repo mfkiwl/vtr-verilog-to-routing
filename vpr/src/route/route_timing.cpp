@@ -2758,7 +2758,6 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 
     timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
-
 static void print_rt_tree(t_rt_node * rt_root)
 {
 
@@ -2790,7 +2789,7 @@ static void print_rt_tree(t_rt_node * rt_root)
             auto& device_ctx = g_vpr_ctx.device();
             if (c != nullptr)
             {
-                VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type());
+                VTR_LOG("%s, inode: %d, C_downstream: %e, Tdel: %e, Switch: %d, name: %s;",device_ctx.rr_nodes[p->inode].type_string(), p -> inode, p -> C_downstream, p -> Tdel, device_ctx.rr_switch_inf[c->iswitch].type(), device_ctx.rr_switch_inf[c->iswitch].name);
             }
             else
             {
