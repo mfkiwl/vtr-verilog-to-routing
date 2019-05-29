@@ -269,6 +269,13 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 					{
 						ast_node_t *var_declare = parent_parameter_list->children[i];
 						sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[parameter_count++]);
+						if(sc_spot == -1)
+						{
+							error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+									"Can't find parameter name %s in module %s\n",
+									var_declare->children[0]->types.identifier,
+									module_name);
+						}
 						local_param_table_sc->data[sc_spot] = (void *)var_declare->children[5];
 					}
 
@@ -301,12 +308,23 @@ void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t
 	}
 
 	/* now that parameters are all updated, resolve them */
-	for (i = 0; i < parameter_num; i++) {
+	for (i = 0; i < parameter_num; i++) 
+	{
 		sc_spot = sc_lookup_string(local_param_table_sc, temp_parameter_list[i]);
+		if(sc_spot == -1)
+		{
+			error_message(NETLIST_ERROR, parent_parameter_list->line_number, parent_parameter_list->file_number,
+					"Can't find parameter name %s in module %s\n",
+					temp_parameter_list[i],
+					module_name);
+		}
 		ast_node_t *node = (ast_node_t *)local_param_table_sc->data[sc_spot];
 		oassert(node);
-		node = resolve_node(NULL, FALSE, module_name, node);
-		if (node->type != NUMBERS) node = resolve_node(NULL, FALSE, parent_module, node); // may contain parameters from parent
+		node = resolve_node(NULL, module_name, node);
+		if (node->type != NUMBERS) 
+		{
+			node = resolve_node(NULL, parent_module, node); // may contain parameters from parent
+		}
 		oassert(node->type == NUMBERS);
 		local_param_table_sc->data[sc_spot] = (void *)node;
 	}
@@ -786,7 +804,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
                 break;
             case VAR_DECLARE:
                 if(node->types.variable.is_parameter == 0 && node->children[5]){
-                    return_sig_list = assignment_alias(node, instance_name_prefix);
+                    /*we don't create signal list on declaration.*/
+					return_sig_list = init_signal_list();
                 }
                 skip_children = TRUE;
                 break;
@@ -858,20 +877,8 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 				type_of_circuit = COMBINATIONAL;
 				break;
 			case BLOCKING_STATEMENT:
-			{
-				/*if (type_of_circuit == SEQUENTIAL)
-					error_message(NETLIST_ERROR, node->line_number, node->file_number,
-							"ODIN doesn't handle blocking statements in Sequential blocks\n");*/
-
-				return_sig_list = assignment_alias(node, instance_name_prefix);
-				skip_children = TRUE;
-				break;
-			}
 			case NON_BLOCKING_STATEMENT:
 			{
-				/*if (type_of_circuit != SEQUENTIAL)
-					error_message(NETLIST_ERROR, node->line_number, node->file_number,
-							"ODIN doesn't handle non blocking statements in combinational blocks\n");*/
 
 				return_sig_list = assignment_alias(node, instance_name_prefix);
 				skip_children = TRUE;
@@ -1363,8 +1370,8 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 						}
 						else if (var_declare->children[3] == NULL)
 						{
-							ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-							ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+							ast_node_t *node_max = resolve_node(NULL, instance_name_prefix, var_declare->children[1]);
+							ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 							
 							oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
 							if(node_min->types.number.value > node_max->types.number.value)
@@ -1446,11 +1453,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	&& var_declare->children[5] 
 	&& var_declare->children[6])
 	{
-		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
-		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
+		ast_node_t *node_max2 = resolve_node(NULL, instance_name_prefix, var_declare->children[3]);
+		ast_node_t *node_min2 = resolve_node(NULL, instance_name_prefix, var_declare->children[4]);
 
-		ast_node_t *node_max3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[5]);
-		ast_node_t *node_min3 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[6]);
+		ast_node_t *node_max3 = resolve_node(NULL, instance_name_prefix, var_declare->children[5]);
+		ast_node_t *node_min3 = resolve_node(NULL, instance_name_prefix, var_declare->children[6]);
 
 
 		oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);		
@@ -1543,8 +1550,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	}
 	else if (var_declare->children[3] == NULL)
 	{
-		ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+		ast_node_t *node_max = resolve_node(NULL, instance_name_prefix, var_declare->children[1]);
+		ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 
 		/* FOR array driver  since sport 3 and 4 are NULL */
 		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
@@ -1599,11 +1606,11 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 	/* Implicit memory */
 	else if (var_declare->children[3] != NULL)
 	{
-		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+		ast_node_t *node_max1 = resolve_node(NULL, instance_name_prefix, var_declare->children[1]);
+		ast_node_t *node_min1 = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 
-		ast_node_t *node_max2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[3]);
-		ast_node_t *node_min2 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[4]);
+		ast_node_t *node_max2 = resolve_node(NULL, instance_name_prefix, var_declare->children[3]);
+		ast_node_t *node_min2 = resolve_node(NULL, instance_name_prefix, var_declare->children[4]);
 
 		oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
 		if(node_min1->types.number.value > node_max1->types.number.value)
@@ -1716,8 +1723,8 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 	else if (var_declare->children[3] == NULL)
 	{
 		/* FOR array driver  since sport 3 and 4 are NULL */
-		ast_node_t *node_max = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
-		ast_node_t *node_min = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
+		ast_node_t *node_max = resolve_node(NULL, instance_name_prefix, var_declare->children[1]);
+		ast_node_t *node_min = resolve_node(NULL, instance_name_prefix, var_declare->children[2]);
 		
 		oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
 		if(node_min->types.number.value > node_max->types.number.value)
@@ -2458,8 +2465,8 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				// instance name
 				module_instance->children[1]->children[0]->types.identifier,
 				NULL, -1);
-			ast_node_t *node1 = resolve_node(NULL, FALSE, module_name, module_var_node->children[1]);
-			ast_node_t *node2 = resolve_node(NULL, FALSE, module_name, module_var_node->children[2]);
+			ast_node_t *node1 = resolve_node(NULL, module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(NULL, module_name, module_var_node->children[2]);
 			vtr::free(module_name);
 			oassert(node2->type == NUMBERS && node1->type == NUMBERS);
 			/* assume all arrays declared [largest:smallest] */
@@ -2474,10 +2481,10 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				// instance name
 				module_instance->children[1]->children[0]->types.identifier,
 				NULL, -1);
-			ast_node_t *node1 = resolve_node(NULL, FALSE, module_name, module_var_node->children[1]);
-			ast_node_t *node2 = resolve_node(NULL, FALSE, module_name, module_var_node->children[2]);
-			ast_node_t *node3 = resolve_node(NULL, FALSE, module_name, module_var_node->children[3]);
-			ast_node_t *node4 = resolve_node(NULL, FALSE, module_name, module_var_node->children[4]);
+			ast_node_t *node1 = resolve_node(NULL, module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(NULL, module_name, module_var_node->children[2]);
+			ast_node_t *node3 = resolve_node(NULL, module_name, module_var_node->children[3]);
+			ast_node_t *node4 = resolve_node(NULL, module_name, module_var_node->children[4]);
 			free(module_name);
 			oassert(node2->type == NUMBERS && node1->type == NUMBERS && node3->type == NUMBERS && node4->type == NUMBERS);
 			/* assume all arrays declared [largest:smallest] */
@@ -2789,8 +2796,8 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				module_instance->children[1]->children[0]->types.identifier,
 				NULL, -1);
 
-			ast_node_t *node1 = resolve_node(NULL, FALSE, module_name, module_var_node->children[1]);
-			ast_node_t *node2 = resolve_node(NULL, FALSE, module_name, module_var_node->children[2]);
+			ast_node_t *node1 = resolve_node(NULL, module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(NULL, module_name, module_var_node->children[2]);
 			vtr::free(module_name);
 			oassert(node2->type == NUMBERS && node1->type == NUMBERS);
 			/* assume all arrays declared [largest:smallest] */
@@ -2807,10 +2814,10 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				module_instance->children[1]->children[0]->types.identifier,
 				NULL, -1);
 
-			ast_node_t *node1 = resolve_node(NULL, FALSE, module_name, module_var_node->children[1]);
-			ast_node_t *node2 = resolve_node(NULL, FALSE, module_name, module_var_node->children[2]);
-			ast_node_t *node3 = resolve_node(NULL, FALSE, module_name, module_var_node->children[3]);
-			ast_node_t *node4 = resolve_node(NULL, FALSE, module_name, module_var_node->children[4]);
+			ast_node_t *node1 = resolve_node(NULL, module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(NULL, module_name, module_var_node->children[2]);
+			ast_node_t *node3 = resolve_node(NULL, module_name, module_var_node->children[3]);
+			ast_node_t *node4 = resolve_node(NULL, module_name, module_var_node->children[4]);
 			free(module_name);
 			oassert(node2->type == NUMBERS && node1->type == NUMBERS && node3->type == NUMBERS && node4->type == NUMBERS);
 			/* assume all arrays declared [largest:smallest] */
@@ -3212,18 +3219,8 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 {
 	ast_node_t *left;
 	ast_node_t *right;
-	if(assignment->type == VAR_DECLARE){
-		left  = assignment->children[0];
-		right = assignment->children[5];
-
-		/*we don't create signal list on declaration.*/
-		return init_signal_list();
-	}
-	else
-	{
-		left  = assignment->children[0];
-		right = assignment->children[1];
-	}
+	left  = assignment->children[0];
+	right = assignment->children[1];
 
 	implicit_memory *left_memory  = lookup_implicit_memory_reference_ast(instance_name_prefix, left);
 	implicit_memory *right_memory = lookup_implicit_memory_reference_ast(instance_name_prefix, right);
@@ -3321,7 +3318,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 	{
 		// TODO Alex - this is temporary
 		if (right->type == BINARY_OPERATION || right->type == UNARY_OPERATION)
-			right = resolve_node(NULL, FALSE, instance_name_prefix, right);
+			right = resolve_node(NULL, instance_name_prefix, right);
 
 		in_1 = netlist_expand_ast_of_module(right, instance_name_prefix);
 		oassert(in_1 != NULL);
@@ -4191,7 +4188,7 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 		if ((operation_node->type == SR) || (operation_node->type == SL) || (operation_node->type == ASR))
 		{
 			/* Need to check that 2nd operand is constant */
-			ast_node_t *second = resolve_node(NULL, FALSE, instance_name_prefix, op->children[1]);
+			ast_node_t *second = resolve_node(NULL, instance_name_prefix, op->children[1]);
 			if (second->type != NUMBERS)
 				error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
 			oassert(second->type == NUMBERS);
@@ -6027,7 +6024,7 @@ void convert_multi_to_single_dimentional_array(ast_node_t *node, char *instance_
 	// see if this operation can be resolved
 	if (new_node_2->type != NUMBERS)
 	{
-		new_node_2 = resolve_node(NULL, FALSE, instance_name_prefix, new_node_2);
+		new_node_2 = resolve_node(NULL, instance_name_prefix, new_node_2);
 	}
 
 	return;

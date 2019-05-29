@@ -50,7 +50,7 @@ static void print_culprit_line(long line_number, long file)
 					break;
 				} else if ('\n' == c) {
 					++current_line_number;
-					if (line_number == current_line_number) {
+					if ((line_number+1) == current_line_number) {
 						copy_characters = true;
 					} else if (copy_characters) {
 						break;
