@@ -57,9 +57,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define INSTANTIATE_DRIVERS 1
 #define ALIAS_INPUTS 2
 
-#define COMBINATIONAL 1
-#define SEQUENTIAL 2
-
 STRING_CACHE *output_nets_sc;
 STRING_CACHE *input_nets_sc;
 
@@ -85,8 +82,8 @@ netlist_t *verilog_netlist;
 
 int netlist_create_line_number = -2;
 
-int type_of_circuit;
-
+circuit_type_e type_of_circuit;
+edge_type_e circuit_edge;
 
 /* PROTOTYPES */
 void create_param_table_for_module(ast_node_t* parent_parameter_list, ast_node_t *module_items, char *module_name, char *parent_module);
@@ -875,6 +872,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			case ASSIGN:
 				/* combinational path */
 				type_of_circuit = COMBINATIONAL;
+				circuit_edge = UNDEFINED_SENSITIVITY;
 				break;
 			case BLOCKING_STATEMENT:
 			case NON_BLOCKING_STATEMENT:
@@ -991,13 +989,9 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 			break;
 			case ALWAYS:
 				/* attach the drivers to the driver nets */
-				switch(type_of_circuit)
+				switch(circuit_edge)
 				{
-					case FALLING_EDGE_SENSITIVITY:
-					{
-						terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
-						break;
-					}
+					case FALLING_EDGE_SENSITIVITY: //fallthrough
 					case RISING_EDGE_SENSITIVITY:
 					{
 						terminate_registered_assignment(node, children_signal_list[1], local_clock_list, instance_name_prefix);
@@ -3333,7 +3327,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 							"Invalid addressing mode for implicit memory %s.\n", left_memory->name);
 
 		// A memory can only be written from a clocked rising edge block.
-		if (type_of_circuit != RISING_EDGE_SENSITIVITY)
+		if (type_of_circuit != SEQUENTIAL)
 		{
 			out_list = NULL;
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, "%s",
@@ -3645,7 +3639,6 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 				local_clock_found = TRUE;
 				local_clock_idx = i;
 			}
-
 		}
 	}
 
@@ -3686,6 +3679,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			ff_node->related_ast_node = always_node;
 
 			ff_node->type = FF_NODE;
+			ff_node->edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
@@ -4271,13 +4265,13 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instance_name_prefix)
 {
 	long i;
-	edge_type_e edge_type = UNDEFINED_SENSITIVITY;
+	circuit_edge = UNDEFINED_SENSITIVITY;
 	signal_list_t *return_sig_list = init_signal_list();
 
 	if (delay_control == NULL)
 	{
 		/* Assume always @* */
-		edge_type = ASYNCHRONOUS_SENSITIVITY;
+		circuit_edge = ASYNCHRONOUS_SENSITIVITY;
 	}
 	else
 	{
@@ -4300,26 +4294,26 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 					break;
 			}
 
-			if(edge_type == UNDEFINED_SENSITIVITY)
-				edge_type = child_sensitivity;
+			if(circuit_edge == UNDEFINED_SENSITIVITY)
+				circuit_edge = child_sensitivity;
 
-			if(	(edge_type != child_sensitivity)
-			&& ((edge_type == ASYNCHRONOUS_SENSITIVITY) || (child_sensitivity == ASYNCHRONOUS_SENSITIVITY)) )
-				error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s",
-					"Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
-			
-			switch(edge_type)
+			if(circuit_edge != child_sensitivity)
 			{
-				/**
-				 * TODO: finish support for falling edge, this is left here for future work
-				 */
+				if(circuit_edge == ASYNCHRONOUS_SENSITIVITY || child_sensitivity == ASYNCHRONOUS_SENSITIVITY)
+				{
+					error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s",
+						"Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
+				}
+			}
+
+			switch(child_sensitivity)
+			{
 				case FALLING_EDGE_SENSITIVITY: //falltrhough
-					edge_type = RISING_EDGE_SENSITIVITY; //fallthrough
 				case RISING_EDGE_SENSITIVITY:
 				{
 					signal_list_t *temp_list = create_pins(delay_control->children[i]->children[0], NULL, instance_name_prefix);
 					oassert(temp_list->count == 1);
-
+					temp_list->pins[0]->sensitivity = child_sensitivity;
 					add_pin_to_signal_list(return_sig_list, temp_list->pins[0]);
 					free_signal_list(temp_list);
 					break;
@@ -4330,16 +4324,20 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 	}
 
 	/* update the analysis type of this block of statements */
-	if(edge_type == UNDEFINED_SENSITIVITY)
-		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
-
-	else if(edge_type == ASYNCHRONOUS_SENSITIVITY)
+	if(circuit_edge == UNDEFINED_SENSITIVITY)
 	{
+		// TODO: empty always block will probably appear here
+		error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
+	}
+	else if(circuit_edge == ASYNCHRONOUS_SENSITIVITY)
+	{
+		/* @(*) or @* is here */
 		free_signal_list(return_sig_list);
 		return_sig_list = NULL;
 	}
 
-	type_of_circuit = edge_type;
+	type_of_circuit = SEQUENTIAL;
+
 	return return_sig_list;
 }
 
@@ -4757,28 +4755,9 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 				/* Don't match, so this signal is an IMPLIED SIGNAL !!! */
 				npin_t *pin = combined_lists->pins[i];
 
-				switch(type_of_circuit)
+				switch(circuit_edge)
 				{
-					case RISING_EDGE_SENSITIVITY:
-					{
-						/* implied signal for mux */
-						if (lookup_implicit_memory_input(pin->name))
-						{
-							// If the mux feeds an implicit memory, imply zero.
-							add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
-						}
-						else
-						{
-							/* lookup this driver name */
-							signal_list_t *this_pin_list = create_pins(NULL, pin->name, instance_name_prefix);
-							oassert(this_pin_list->count == 1);
-							//add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(verilog_netlist), pin_index);
-							add_input_pin_to_node(mux_node, this_pin_list->pins[0], pin_index);
-							/* clean up */
-							free_signal_list(this_pin_list);
-						}
-						break;
-					}
+					case RISING_EDGE_SENSITIVITY: //fallthrough
 					case FALLING_EDGE_SENSITIVITY:
 					{
 						/* implied signal for mux */

@@ -1412,7 +1412,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
-	if(sc_lookup_string(hard_block_names, module_name))
+	if(sc_lookup_string(hard_block_names, module_name) != -1)
 	{
 		warning_message(PARSE_ERROR, line_number, current_parse_file, 
 			"Probable module name collision with hard block of the same name -> %s\n", module_name);		
