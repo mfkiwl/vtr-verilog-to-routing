@@ -105,8 +105,8 @@ function restrict_ressource {
 	renice -n ${NICE_VALUE}  -p $$ &> /dev/null
 
 	log_it "Setting Nice value to ${NICE_VALUE}\n"
-	log_it "Virtual Memory Limit:\t$(( $(ulimit -a | grep "virtual memory" | tr -s ' ' | cut -d ')' -f2) /1024 ))MB\n" 
-	log_it "Physical Memory Limit:\t$(( $(ulimit -a | grep "max memory size" | tr -s ' ' | cut -d ')' -f2) /1024 ))MB\n"
+	log_it "Virtual Memory Limit:\t$(ulimit -a | grep "virtual memory" | tr -s ' ' | cut -d ')' -f2)\n" 
+	log_it "Physical Memory Limit:\t$(ulimit -a | grep "max memory size" | tr -s ' ' | cut -d ')' -f2)\n"
 	dump_log
 }
 

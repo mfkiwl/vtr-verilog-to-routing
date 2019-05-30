@@ -63,6 +63,9 @@ function exit_program() {
 	if [ "_${FAILURE}" != "_0" ]
 	then
 		echo "Failed ${FAILURE} benchmarks"
+		echo ""
+		cat ${NEW_RUN_DIR}/test_failures.log
+		echo ""
 		echo "View Failure log in ${NEW_RUN_DIR}/test_failures.log"
 
 	else
@@ -103,7 +106,7 @@ printf "Called program with $INPUT
 
 	OPTIONS:
 		-h|--help                       $(_prt_cur_arg off) print this
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit )
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is one of ( ${TEST_DIR_LIST} heavy_suite light_suite full_suite vtr_basic vtr_strong pre_commit failures)
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-s|--sim_threads < N >          $(_prt_cur_arg ${_SIM_THREADS}) Use multithreaded simulation using N threads
 		-V|--vectors < N >              $(_prt_cur_arg ${_VECTORS}) Use N vectors to generate per simulation
@@ -177,10 +180,15 @@ function init_temp() {
 	fi
 
 	NEW_RUN_DIR=${OUTPUT_DIRECTORY}/run$(printf "%03d" $n)
-	echo "running benchmark @${NEW_RUN_DIR}"
-	mkdir -p ${NEW_RUN_DIR}
-	unlink regression_test/latest 
-	ln -s ${NEW_RUN_DIR} regression_test/latest
+}
+
+function create_temp() {
+	if [ ! -d ${NEW_RUN_DIR} ]; then
+		echo "running benchmark @${NEW_RUN_DIR}"
+		mkdir -p ${NEW_RUN_DIR}
+		unlink regression_test/latest 
+		ln -s ${NEW_RUN_DIR} regression_test/latest
+	fi
 }
 
 function cleanup_temp() {
@@ -540,7 +548,6 @@ function sim() {
 			basename=""
 			case "${benchmark}" in
 				*.v)
-					# this is a blif file
 					_SYNTHESIS="on"
 					basename=${benchmark%.v}
 				;;
@@ -673,6 +680,21 @@ function sim() {
 	fi
 }
 
+function run_failed() {
+	FAILED_RUN_DIR="regression_test/latest"
+
+	#synthesize the circuits
+	if [ -d ${FAILED_RUN_DIR}/synthesis_failures ]; then
+		echo " ========= Synthesizing Circuits"
+		find -L ${FAILED_RUN_DIR}/synthesis_failures/ -name cmd_param | xargs -n1 -I test_cmd ${SHELL} -c '$(cat test_cmd)'
+	fi
+
+	#run the simulation
+	if [ -d ${FAILED_RUN_DIR}/simulation_failures ]; then
+		echo " ========= Simulating Circuits"
+		find -L ${FAILED_RUN_DIR}/simulation_failures/ -name sim_param | xargs -n1 -I sim_cmd ${SHELL} -c '$(cat sim_cmd)'
+	fi
+}
 
 HEAVY_LIST=(
 	"full"
@@ -699,6 +721,7 @@ function run_sim_on_directory() {
 		echo "please make sure a config.txt exist"
 		config_help
 	else
+		create_temp
 		sim ${BENCHMARK_DIR}/${test_dir} $(cat ${BENCHMARK_DIR}/${test_dir}/config.txt)
 	fi
 }
@@ -731,6 +754,8 @@ function run_vtr_reg() {
 
 START=`get_current_time`
 
+init_temp
+
 parse_args $INPUT
 _set_flag
 
@@ -742,9 +767,12 @@ then
 	exit_program
 fi
 
-init_temp
 echo "Benchmark is: ${_TEST}"
 case ${_TEST} in
+
+	failures)
+		run_failed
+		;;
 
 	full_suite)
 		run_all
@@ -777,22 +805,7 @@ case ${_TEST} in
 		;;
 
 	*)
-		if [ ! -e ${BENCHMARK_DIR}/${_TEST} ]
-		then
-			echo "${BENCHMARK_DIR}/${_TEST} Not Found! exiting."
-			config_help
-			ctrl_c
-		fi
-
-		if [ ! -e ${BENCHMARK_DIR}/${_TEST}/config.txt ]
-		then
-			echo "no config file found in the directory."
-			echo "please make sure a config.txt exist"
-			config_help
-			ctrl_c
-		fi
-
-		sim ${BENCHMARK_DIR}/${_TEST} $(cat ${BENCHMARK_DIR}/${_TEST}/config.txt)
+		run_sim_on_directory ${BENCHMARK_DIR}/${_TEST}
 		;;
 esac
 

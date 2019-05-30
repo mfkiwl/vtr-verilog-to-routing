@@ -22,6 +22,7 @@ BUILD_TYPE ?= release
 MAKEFLAGS := -s
 
 BUILD_DIR=../build
+CUR_DIR=$(shell dirname $(PWD))
 
 .PHONY: help build debug test large_test
 

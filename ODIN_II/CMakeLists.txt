@@ -4,7 +4,6 @@ project("ODIN_II")
 
 #base extra flags for odin
 set(ODIN_EXTRA_FLAGS 
-    ""  # nothing for now
 )
 
 if(ODIN_DEBUG)
@@ -35,14 +34,13 @@ if(ODIN_DEBUG)
         "-g"
         "-ggdb"
         "-O0"
-        ""
         ${ODIN_EXTRA_FLAGS}
     ##############
     # comment out the flag set you do not wish to see added below
     #
-        ${ODIN_REF_FLAGS}
-        ${ODIN_SIGN_FLAGS}
-        ${ODIN_LIMITS_FLAGS}
+       ${ODIN_REF_FLAGS}
+       ${ODIN_SIGN_FLAGS}
+       ${ODIN_LIMITS_FLAGS}
     )
 
 endif()
